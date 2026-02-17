@@ -1,0 +1,749 @@
+/* ── Design tokens (Claude dark palette) ─────────────────────────────────── */
+:root {
+    --bg-base:        #1a1a1a;   /* page background */
+    --bg-surface:     #242424;   /* cards, sidebar, modals */
+    --bg-elevated:    #2e2e2e;   /* inputs, hover states, row headers */
+    --bg-highlight:   #383838;   /* active/selected cells, hover rows */
+
+    --border:         #3d3d3d;
+    --border-subtle:  #2e2e2e;
+
+    --text-primary:   #e8e6e0;   /* warm off-white */
+    --text-secondary: #a09f9a;   /* muted */
+    --text-hint:      #5a5a58;
+
+    --accent:         #d4956a;   /* Claude's coral/terracotta */
+    --accent-hover:   #c4804f;
+    --accent-dim:     rgba(212, 149, 106, 0.15);
+
+    --danger:         #c0544a;
+    --danger-hover:   #a8413a;
+    --danger-dim:     rgba(192, 84, 74, 0.15);
+
+    --blue:           #5b8dd9;
+    --blue-hover:     #4a78c4;
+    --blue-dim:       rgba(91, 141, 217, 0.15);
+
+    --shadow:         0 2px 8px rgba(0,0,0,0.5);
+    --shadow-lg:      0 4px 16px rgba(0,0,0,0.6);
+    --radius:         8px;
+    --radius-sm:      5px;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ── Header & Nav ────────────────────────────────────────────────────────── */
+header {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: var(--radius);
+    margin-bottom: 30px;
+    box-shadow: var(--shadow);
+}
+
+header h1 {
+    color: var(--accent);
+    margin-bottom: 15px;
+    font-size: 1.6rem;
+    letter-spacing: -0.3px;
+}
+
+nav { display: flex; gap: 10px; }
+
+.nav-btn {
+    background-color: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.nav-btn:hover {
+    background-color: var(--bg-highlight);
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+.nav-btn.active {
+    background-color: var(--accent);
+    color: #1a1a1a;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.section { display: none; }
+.section.active { display: block; }
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    color: var(--accent);
+    font-size: 1.3rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+    background-color: var(--accent);
+    color: #1a1a1a;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover { background-color: var(--accent-hover); }
+
+.btn-secondary {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-highlight);
+    border-color: var(--text-secondary);
+}
+
+.btn-danger {
+    background-color: var(--danger-dim);
+    color: #e07060;
+    border: 1px solid var(--danger);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.btn-icon:hover { opacity: 1; }
+
+.btn-remove { color: #e07060; }
+
+.btn-copy {
+    background-color: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.btn-copy:hover {
+    background-color: var(--blue);
+    color: #1a1a1a;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 20px; }
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea,
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    width: 100%;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+::placeholder { color: var(--text-hint); }
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.ingredient-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ingredient-item input { flex: 1; }
+
+.ingredient-item button {
+    background-color: var(--danger-dim);
+    color: #e07060;
+    border: 1px solid var(--danger);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.ingredient-item button:hover {
+    background-color: var(--danger);
+    color: white;
+}
+
+/* ── Recipe Grid ─────────────────────────────────────────────────────────── */
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.recipe-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recipe-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent);
+}
+
+.recipe-card h3 {
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.recipe-card .servings {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.recipe-card .ingredients-preview {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.recipe-card .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.75);
+    backdrop-filter: blur(2px);
+}
+
+.modal.active { display: block; }
+
+.modal-content {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-content h2 {
+    color: var(--accent);
+    margin-bottom: 20px;
+}
+
+.close {
+    color: var(--text-hint);
+    float: right;
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close:hover { color: var(--text-primary); }
+
+/* ── Meal Plan Layout ────────────────────────────────────────────────────── */
+#meal-plan-container {
+    display: flex;
+    gap: 20px;
+}
+
+#meal-plan-main { flex: 1; }
+
+/* ── Recipe Sidebar ──────────────────────────────────────────────────────── */
+.recipe-sidebar {
+    width: 260px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    position: sticky;
+    top: 20px;
+}
+
+.recipe-sidebar h3 {
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#recipe-search {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+#sidebar-recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-recipe-item {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    transition: all 0.2s;
+}
+
+.sidebar-recipe-item:hover {
+    background-color: var(--bg-highlight);
+    border-color: var(--accent);
+}
+
+.sidebar-recipe-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+.sidebar-recipe-item strong {
+    display: block;
+    color: var(--accent);
+    margin-bottom: 3px;
+    font-size: 13px;
+}
+
+.sidebar-recipe-item .recipe-servings {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ── Household Selector ──────────────────────────────────────────────────── */
+#household-selector {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.household-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.household-tab {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    background-color: var(--bg-elevated);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.household-tab:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.household-tab.active {
+    background-color: var(--accent);
+    color: #1a1a1a;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ── Compact Meal Plan Grid ──────────────────────────────────────────────── */
+.meal-plan-grid {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+
+.compact-meal-plan {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.plan-row { display: table-row; }
+.plan-header { font-weight: bold; }
+
+.plan-cell {
+    display: table-cell;
+    border: 1px solid var(--border-subtle);
+    padding: 8px;
+    vertical-align: middle;
+    min-width: 120px;
+}
+
+.day-label {
+    background-color: var(--bg-elevated);
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    min-width: 55px;
+    font-size: 13px;
+}
+
+.meal-header {
+    background-color: var(--bg-elevated);
+    color: var(--text-secondary);
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.meal-slot {
+    cursor: pointer;
+    position: relative;
+    min-height: 54px;
+    transition: background-color 0.15s;
+}
+
+.meal-slot.empty-slot {
+    background-color: var(--bg-base);
+    text-align: center;
+}
+
+.meal-slot.empty-slot:hover {
+    background-color: var(--bg-elevated);
+}
+
+.drop-hint {
+    color: var(--text-hint);
+    font-size: 20px;
+    line-height: 54px;
+}
+
+.meal-slot.drag-over {
+    background-color: var(--accent-dim) !important;
+    border-color: var(--accent) !important;
+}
+
+.assigned-recipe-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.recipe-name-compact {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recipe-actions-compact {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+/* ── Household Member Item ───────────────────────────────────────────────── */
+.member-item {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+}
+
+.member-item input { margin-bottom: 0; }
+
+/* ── Pantry Check List ───────────────────────────────────────────────────── */
+#pantry-check-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+.pantry-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 6px;
+}
+
+.pantry-item > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pantry-cb {
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
+.pantry-label {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.pantry-total {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.pantry-partial {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 6px 28px;
+    background-color: rgba(212, 149, 106, 0.08);
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+
+.pantry-partial label {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.partial-qty {
+    width: 80px !important;
+    padding: 4px 6px !important;
+}
+
+.partial-unit {
+    padding: 4px 6px;
+    width: auto !important;
+}
+
+/* ── Quick Fill ──────────────────────────────────────────────────────────── */
+.quick-fill-content { max-width: 400px; }
+
+#quick-fill-days {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#quick-fill-days label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+#quick-fill-days label:hover {
+    border-color: var(--accent);
+}
+
+#quick-fill-days input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--accent);
+}
+
+/* ── Shopping List ───────────────────────────────────────────────────────── */
+#shopping-list-content {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+.ingredient-group { margin-bottom: 20px; }
+
+.ingredient-group h3 {
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ingredient-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 11px 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.15s;
+    border-radius: 4px;
+}
+
+.ingredient-checkbox:hover {
+    background-color: var(--bg-elevated);
+}
+
+.ingredient-checkbox input[type="checkbox"] {
+    margin-right: 12px;
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+}
+
+.ingredient-checkbox label {
+    flex: 1;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.ingredient-checkbox.checked label {
+    text-decoration: line-through;
+    color: var(--text-hint);
+}
+
+/* ── Empty State ─────────────────────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-hint);
+    font-size: 15px;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-hint); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    nav { flex-direction: column; }
+
+    .recipe-grid { grid-template-columns: 1fr; }
+
+    #meal-plan-container { flex-direction: column; }
+
+    .recipe-sidebar {
+        width: 100%;
+        position: static;
+        max-height: 280px;
+    }
+
+    .plan-cell {
+        min-width: 90px;
+        font-size: 11px;
+        padding: 6px;
+    }
+
+    .recipe-name-compact { font-size: 11px; }
+}

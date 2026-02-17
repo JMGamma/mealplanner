@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planning App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Meal Planning App</h1>
+            <nav>
+                <button class="nav-btn active" data-section="recipes">Recipe Book</button>
+                <button class="nav-btn" data-section="meal-plan">Meal Plan</button>
+                <button class="nav-btn" data-section="shopping-list">Shopping List</button>
+            </nav>
+        </header>
+
+        <!-- Recipe Book Section -->
+        <section id="recipes" class="section active">
+            <div class="section-header">
+                <h2>Recipe Book</h2>
+                <button id="add-recipe-btn" class="btn-primary">Add Recipe</button>
+            </div>
+            <div id="recipe-list" class="recipe-grid"></div>
+        </section>
+
+        <!-- Meal Plan Section -->
+        <section id="meal-plan" class="section">
+            <div class="section-header">
+                <h2>Weekly Meal Plan</h2>
+                <button id="manage-household-btn" class="btn-primary">Manage Household</button>
+            </div>
+            <div id="meal-plan-container">
+                <div id="recipe-sidebar" class="recipe-sidebar">
+                    <h3>Recipe Book</h3>
+                    <input type="text" id="recipe-search" placeholder="Search recipes...">
+                    <div id="sidebar-recipe-list"></div>
+                </div>
+                <div id="meal-plan-main">
+                    <div id="household-selector"></div>
+                    <div id="meal-plan-grid" class="meal-plan-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shopping List Section -->
+        <section id="shopping-list" class="section">
+            <div class="section-header">
+                <h2>Shopping List</h2>
+                <button id="generate-list-btn" class="btn-primary">Generate from Meal Plan</button>
+            </div>
+            <div id="shopping-list-content"></div>
+        </section>
+    </div>
+
+    <!-- Recipe Modal -->
+    <div id="recipe-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Add Recipe</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-name">Recipe Name:</label>
+                    <input type="text" id="recipe-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="recipe-servings">Servings:</label>
+                    <input type="number" id="recipe-servings" min="1" value="4">
+                </div>
+                <div class="form-group">
+                    <label>Ingredients:</label>
+                    <div id="ingredients-list"></div>
+                    <button type="button" id="add-ingredient-btn" class="btn-secondary">Add Ingredient</button>
+                </div>
+                <div class="form-group">
+                    <label for="recipe-instructions">Instructions:</label>
+                    <textarea id="recipe-instructions" rows="6"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save Recipe</button>
+                    <button type="button" class="btn-secondary cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Household Modal -->
+    <div id="household-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Manage Household Members</h2>
+            <div id="household-members-list"></div>
+            <button type="button" id="add-member-btn" class="btn-primary">Add Member</button>
+        </div>
+    </div>
+
+    <!-- Pantry Check Modal -->
+    <div id="pantry-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Check Your Pantry</h2>
+            <p>Select the ingredients you already have at home:</p>
+            <div id="pantry-check-list"></div>
+            <div class="form-actions">
+                <button id="confirm-pantry-btn" class="btn-primary">Generate Shopping List</button>
+                <button class="btn-secondary cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Fill Modal -->
+    <div id="quick-fill-modal" class="modal">
+        <div class="modal-content quick-fill-content">
+            <span class="close">&times;</span>
+            <h2>Quick Fill Recipe</h2>
+            <p id="quick-fill-recipe-name"></p>
+            <div class="form-group">
+                <label>Copy to these days:</label>
+                <div id="quick-fill-days"></div>
+            </div>
+            <div class="form-actions">
+                <button id="confirm-quick-fill-btn" class="btn-primary">Apply</button>
+                <button class="btn-secondary cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
