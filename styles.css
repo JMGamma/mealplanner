@@ -59,10 +59,31 @@ header {
 
 header h1 {
     color: var(--accent);
-    margin-bottom: 15px;
     font-size: 1.6rem;
     letter-spacing: -0.3px;
 }
+
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+/* ── Sync status pill ────────────────────────────────────────────────────── */
+.sync-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    transition: background 0.3s, color 0.3s;
+}
+.sync-status.saved  { background: rgba(91,141,217,0.15); color: var(--blue); }
+.sync-status.saving { background: rgba(212,149,106,0.15); color: var(--accent); }
+.sync-status.loading{ background: rgba(212,149,106,0.15); color: var(--accent); }
+.sync-status.error  { background: var(--danger-dim); color: var(--danger); }
+.sync-status.offline{ background: var(--bg-elevated); color: var(--text-hint); }
 
 nav { display: flex; gap: 10px; }
 

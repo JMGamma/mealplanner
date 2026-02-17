@@ -1,13 +1,149 @@
-// Data structure
+// ─── Supabase config ──────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://zcuyzifghtheqlfylnix.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdXl6aWZnaHRoZXFsZnlsbml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTI3NzEsImV4cCI6MjA4Njg2ODc3MX0.pAIYwJpt6Hapfy0wPzIuZjg3_Lqa6h1MoHEOFSYaUCk';
+const SUPABASE_ROW_ID = 'default';
+const SUPABASE_TABLE = 'meal_plan_data';
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
 let recipes = [];
 let mealPlan = {}; // { memberId: { day: { meal: recipeId } } }
 let householdMembers = [];
 let pantryItems = [];
 let currentMember = null;
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+// ─── Sync state ───────────────────────────────────────────────────────────────
+let syncDebounceTimer = null;
+let isSyncing = false;
+
+// ─── Supabase helpers ─────────────────────────────────────────────────────────
+async function supabaseFetch(method, body = null) {
+    const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}`;
+    const opts = {
+        method,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal'
+        }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Supabase ${method} failed: ${res.status} ${text}`);
+    }
+    return res;
+}
+
+async function supabaseLoad() {
+    const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`;
+    const res = await fetch(url, {
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+    });
+    if (!res.ok) throw new Error(`Supabase load failed: ${res.status}`);
+    const rows = await res.json();
+    return rows.length > 0 ? rows[0].data : null;
+}
+
+async function supabaseSave(payload) {
+    // Upsert (insert or update)
+    await supabaseFetch('POST', { id: SUPABASE_ROW_ID, data: payload });
+}
+
+// ─── Sync status UI ───────────────────────────────────────────────────────────
+function setSyncStatus(state) {
+    // states: 'saved' | 'saving' | 'error' | 'offline' | 'loading'
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    el.className = 'sync-status ' + state;
+    const labels = {
+        saved:   '✓ Saved',
+        saving:  '⟳ Saving…',
+        error:   '⚠ Save failed',
+        offline: '○ Offline',
+        loading: '⟳ Loading…'
+    };
+    el.textContent = labels[state] || '';
+}
+
+// ─── Persistence ──────────────────────────────────────────────────────────────
+function getPayload() {
+    return { recipes, mealPlan, householdMembers, currentMember, pantryItems };
+}
+
+function applyPayload(parsed) {
+    recipes         = parsed.recipes         || [];
+    mealPlan        = parsed.mealPlan        || {};
+    householdMembers= parsed.householdMembers|| [];
+    currentMember   = parsed.currentMember   || null;
+    pantryItems     = parsed.pantryItems     || [];
+}
+
+// Write to localStorage immediately (so offline still works)
+// then debounce a push to Supabase
+function saveData() {
+    const payload = getPayload();
+    localStorage.setItem('mealPlanApp', JSON.stringify(payload));
+
+    // Debounce cloud save by 800 ms so rapid changes batch together
+    clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(() => pushToSupabase(payload), 800);
+}
+
+async function pushToSupabase(payload) {
+    if (isSyncing) return;
+    isSyncing = true;
+    setSyncStatus('saving');
+    try {
+        await supabaseSave(payload);
+        setSyncStatus('saved');
+    } catch (err) {
+        console.warn('Supabase save error:', err);
+        setSyncStatus('error');
+    } finally {
+        isSyncing = false;
+    }
+}
+
+async function loadData() {
+    // 1. Load localStorage immediately so the UI is usable right away
+    const local = localStorage.getItem('mealPlanApp');
+    if (local) {
+        try { applyPayload(JSON.parse(local)); } catch (e) { /* ignore */ }
+    }
+
+    // 2. Try to load from Supabase (authoritative source)
+    setSyncStatus('loading');
+    try {
+        const remote = await supabaseLoad();
+        if (remote) {
+            // Merge strategy: remote wins (it's the cross-device source of truth)
+            applyPayload(remote);
+            // Update localStorage with the fresh remote data
+            localStorage.setItem('mealPlanApp', JSON.stringify(remote));
+            setSyncStatus('saved');
+        } else if (local) {
+            // No remote data yet — push local data up as the initial state
+            setSyncStatus('saving');
+            await supabaseSave(JSON.parse(local));
+            setSyncStatus('saved');
+        } else {
+            setSyncStatus('saved');
+        }
+    } catch (err) {
+        console.warn('Supabase load error — running offline:', err);
+        setSyncStatus('offline');
+    }
+}
+
+// ─── Initialize app ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    setSyncStatus('loading');
+    await loadData();
     initializeNavigation();
     initializeRecipeBook();
     initializeHousehold();
@@ -562,14 +698,7 @@ function confirmQuickFill() {
     modal.classList.remove('active');
 }
 
-// ─── Unit conversion ─────────────────────────────────────────────────────────
-// Every unit is normalised to one of five metric base units:
-//   mass   → grams  (g)
-//   volume → millilitres (ml)
-//   count  → piece(s) — kept as-is with plural handling
-//   length → cm
-//   (anything unrecognised stays as-is and is just summed numerically)
-
+// ─── Unit conversion ──────────────────────────────────────────────────────────
 const UNIT_MAP = {
     // ── mass → g ──────────────────────────────────────────
     g: { base: 'mass', factor: 1 },
@@ -662,7 +791,6 @@ const COUNT_UNITS = {
     loaves: 'loaves',
     egg: 'eggs',
     eggs: 'eggs',
-    // singular forms used as display key
     _singular: {
         pieces: 'piece', slices: 'slice', strips: 'strip', sheets: 'sheet',
         cloves: 'clove', sprigs: 'sprig', leaves: 'leaf', stalks: 'stalk',
@@ -671,7 +799,6 @@ const COUNT_UNITS = {
     }
 };
 
-// Convert a { quantity, unit } to { grams | ml | cm | count, base }
 function toBase(quantity, rawUnit) {
     const u = (rawUnit || '').trim().toLowerCase();
     if (!u) return { value: quantity, base: 'count', displayUnit: '' };
@@ -681,17 +808,14 @@ function toBase(quantity, rawUnit) {
         return { value: quantity * mapping.factor, base: mapping.base };
     }
 
-    // Count unit?
     const pluralForm = COUNT_UNITS[u];
     if (pluralForm !== undefined) {
         return { value: quantity, base: 'count', countUnit: pluralForm };
     }
 
-    // Unknown — treat as opaque label, sum numerically
     return { value: quantity, base: 'unknown', displayUnit: u };
 }
 
-// Choose the best metric display unit given a base value
 function formatMetric(value, base) {
     if (base === 'mass') {
         if (value >= 1000) return { amount: value / 1000, unit: 'kg' };
@@ -709,14 +833,11 @@ function formatMetric(value, base) {
 }
 
 function formatNumber(num) {
-    // Round to 2 dp, drop trailing zeros
     const rounded = Math.round(num * 100) / 100;
     return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2).replace(/\.?0+$/, '');
 }
 
-// Master aggregation: returns array of { name, totalGrams|ml|etc, displayString }
 function aggregateIngredients() {
-    // Map: ingredientKey → { name, bases: { mass: g, volume: ml, count: { unitPlural: n }, unknown: { label: n }, length: cm } }
     const ingredientMap = new Map();
 
     householdMembers.forEach(member => {
@@ -743,7 +864,6 @@ function aggregateIngredients() {
                         const cu = converted.countUnit || 'pieces';
                         entry.bases.count[cu] = (entry.bases.count[cu] || 0) + converted.value;
                     } else {
-                        // unknown unit — group by label
                         const du = converted.displayUnit || '';
                         entry.bases.unknown[du] = (entry.bases.unknown[du] || 0) + converted.value;
                     }
@@ -755,7 +875,6 @@ function aggregateIngredients() {
     return ingredientMap;
 }
 
-// Build a human-readable total string for an ingredient entry
 function buildTotalString(bases) {
     const parts = [];
 
@@ -834,13 +953,11 @@ function showPantryCheck() {
     cancelBtn.onclick = () => modal.classList.remove('active');
 }
 
-// Build the unit options for the partial-amount selector based on what bases exist
 function buildPartialUnitOptions(bases) {
     const options = [];
     if (bases.mass > 0) {
         const f = formatMetric(bases.mass, 'mass');
         options.push(`<option value="${f.unit}">${f.unit}</option>`);
-        // offer both g and kg
         if (f.unit === 'kg') options.push('<option value="g">g</option>');
         else options.push('<option value="kg">kg</option>');
     }
@@ -878,9 +995,8 @@ function generateShoppingList() {
     const ingredientMap = aggregateIngredients();
     const shoppingListContent = document.getElementById('shopping-list-content');
 
-    // Collect pantry state: fully checked = subtract all; partial = subtract amount
     const pantryRows = document.querySelectorAll('.pantry-item');
-    const subtractions = new Map(); // key → { mass, volume, length, count:{}, unknown:{} }
+    const subtractions = new Map();
 
     pantryRows.forEach(row => {
         const key = row.dataset.key;
@@ -892,7 +1008,6 @@ function generateShoppingList() {
         const partialQty = parseFloat(partialQtyEl?.value);
 
         if (!isNaN(partialQty) && partialQty > 0 && partialUnitEl) {
-            // Partial subtraction
             const converted = toBase(partialQty, partialUnitEl.value);
             const sub = { mass: 0, volume: 0, length: 0, count: {}, unknown: {} };
             if (converted.base === 'mass') sub.mass = converted.value;
@@ -902,22 +1017,19 @@ function generateShoppingList() {
             else sub.unknown[converted.displayUnit || ''] = converted.value;
             subtractions.set(key, sub);
         } else {
-            // Full subtraction — mark to remove entirely
             subtractions.set(key, 'all');
         }
     });
 
     modal.classList.remove('active');
 
-    // Build final shopping list
     const result = [];
 
     ingredientMap.forEach((ing, key) => {
         const sub = subtractions.get(key);
 
-        if (sub === 'all') return; // skip entirely
+        if (sub === 'all') return;
 
-        // Clone bases
         const bases = {
             mass: ing.bases.mass,
             volume: ing.bases.volume,
@@ -940,7 +1052,6 @@ function generateShoppingList() {
             });
         }
 
-        // Skip if everything zeroed out
         const totalRemaining = bases.mass + bases.volume + bases.length
             + Object.values(bases.count).reduce((a, b) => a + b, 0)
             + Object.values(bases.unknown).reduce((a, b) => a + b, 0);
@@ -973,27 +1084,4 @@ function generateShoppingList() {
             this.parentElement.classList.toggle('checked', this.checked);
         });
     });
-}
-
-// Data Persistence
-function saveData() {
-    localStorage.setItem('mealPlanApp', JSON.stringify({
-        recipes,
-        mealPlan,
-        householdMembers,
-        currentMember,
-        pantryItems
-    }));
-}
-
-function loadData() {
-    const data = localStorage.getItem('mealPlanApp');
-    if (data) {
-        const parsed = JSON.parse(data);
-        recipes = parsed.recipes || [];
-        mealPlan = parsed.mealPlan || {};
-        householdMembers = parsed.householdMembers || [];
-        currentMember = parsed.currentMember || null;
-        pantryItems = parsed.pantryItems || [];
-    }
 }
