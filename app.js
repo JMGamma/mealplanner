@@ -10,10 +10,16 @@ let mealPlan = {}; // { memberId: { day: { meal: recipeId } } }
 let householdMembers = [];
 let pantryItems = [];
 let currentMember = null;
+let shoppingList = []; // [{ name, total, checked }]
 
 // ─── Sync state ───────────────────────────────────────────────────────────────
 let syncDebounceTimer = null;
 let isSyncing = false;
+
+// ─── Sidebar sort state ────────────────────────────────────────────────────────
+const SORT_MODES = ['az', 'za', 'recent'];
+const SORT_LABELS = { az: 'A–Z', za: 'Z–A', recent: 'Recent' };
+let sidebarSortMode = 'az';
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 async function supabaseFetch(method, body = null) {
@@ -72,7 +78,7 @@ function setSyncStatus(state) {
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 function getPayload() {
-    return { recipes, mealPlan, householdMembers, currentMember, pantryItems };
+    return { recipes, mealPlan, householdMembers, currentMember, pantryItems, shoppingList };
 }
 
 function applyPayload(parsed) {
@@ -81,6 +87,7 @@ function applyPayload(parsed) {
     householdMembers= parsed.householdMembers|| [];
     currentMember   = parsed.currentMember   || null;
     pantryItems     = parsed.pantryItems     || [];
+    shoppingList    = parsed.shoppingList    || [];
 }
 
 // Write to localStorage immediately (so offline still works)
@@ -149,6 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeHousehold();
     initializeMealPlan();
     initializeShoppingList();
+    renderShoppingList();
 });
 
 // Navigation
@@ -347,6 +355,8 @@ function initializeRecipeBook() {
         saveRecipe();
     });
 
+    document.getElementById('recipe-book-search').addEventListener('input', renderRecipes);
+
     renderRecipes();
 }
 
@@ -437,13 +447,23 @@ function saveRecipe() {
 
 function renderRecipes() {
     const recipeList = document.getElementById('recipe-list');
+    const searchTerm = (document.getElementById('recipe-book-search')?.value || '').toLowerCase().trim();
 
     if (recipes.length === 0) {
         recipeList.innerHTML = '<div class="empty-state">No recipes yet. Click "Add Recipe" to get started!</div>';
         return;
     }
 
-    recipeList.innerHTML = recipes.map((recipe, index) => {
+    const filtered = recipes
+        .map((recipe, index) => ({ recipe, index }))
+        .filter(({ recipe }) => !searchTerm || recipe.name.toLowerCase().includes(searchTerm));
+
+    if (filtered.length === 0) {
+        recipeList.innerHTML = '<div class="empty-state">No recipes match your search.</div>';
+        return;
+    }
+
+    recipeList.innerHTML = filtered.map(({ recipe, index }) => {
         const ingredientsPreview = recipe.ingredients.slice(0, 3).map(i => i.name).join(', ');
         const moreText = recipe.ingredients.length > 3 ? ` (+${recipe.ingredients.length - 3} more)` : '';
 
@@ -493,33 +513,39 @@ function deleteRecipe(index) {
 }
 
 // Sidebar Recipes
-function renderSidebarRecipes(searchTerm = '') {
+function renderSidebarRecipes() {
     const sidebarList = document.getElementById('sidebar-recipe-list');
-    const searchInput = document.getElementById('recipe-search');
+    const searchTerm = (document.getElementById('recipe-search')?.value || '').toLowerCase();
 
-    // Set up search listener
-    searchInput.oninput = (e) => renderSidebarRecipes(e.target.value);
+    // Update sort button label
+    const sortBtn = document.getElementById('sidebar-sort-btn');
+    if (sortBtn) sortBtn.textContent = SORT_LABELS[sidebarSortMode];
 
-    const filteredRecipes = recipes.filter(recipe =>
-        recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const indexed = recipes.map((recipe, index) => ({ recipe, index }));
+
+    const filtered = indexed.filter(({ recipe }) =>
+        recipe.name.toLowerCase().includes(searchTerm)
     );
 
-    if (filteredRecipes.length === 0) {
+    const sorted = filtered.slice().sort((a, b) => {
+        if (sidebarSortMode === 'az') return a.recipe.name.localeCompare(b.recipe.name);
+        if (sidebarSortMode === 'za') return b.recipe.name.localeCompare(a.recipe.name);
+        // recent: higher lastUsed timestamp first, unset recipes go to the end
+        return (b.recipe.lastUsed || 0) - (a.recipe.lastUsed || 0);
+    });
+
+    if (sorted.length === 0) {
         sidebarList.innerHTML = '<div class="empty-state" style="padding: 20px;">No recipes found</div>';
         return;
     }
 
-    sidebarList.innerHTML = filteredRecipes.map((recipe, originalIndex) => {
-        const actualIndex = recipes.indexOf(recipe);
-        return `
-            <div class="sidebar-recipe-item" draggable="true" data-recipe-id="${actualIndex}">
-                <strong>${recipe.name}</strong>
-                <div class="recipe-servings">Servings: ${recipe.servings}</div>
-            </div>
-        `;
-    }).join('');
+    sidebarList.innerHTML = sorted.map(({ recipe, index }) => `
+        <div class="sidebar-recipe-item" draggable="true" data-recipe-id="${index}">
+            <strong>${recipe.name}</strong>
+            <div class="recipe-servings">Servings: ${recipe.servings}</div>
+        </div>
+    `).join('');
 
-    // Add drag event listeners
     document.querySelectorAll('.sidebar-recipe-item').forEach(item => {
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
@@ -540,6 +566,14 @@ function handleDragEnd(e) {
 
 // Meal Plan
 function initializeMealPlan() {
+    document.getElementById('recipe-search').addEventListener('input', renderSidebarRecipes);
+
+    document.getElementById('sidebar-sort-btn').addEventListener('click', () => {
+        const idx = SORT_MODES.indexOf(sidebarSortMode);
+        sidebarSortMode = SORT_MODES[(idx + 1) % SORT_MODES.length];
+        renderSidebarRecipes();
+    });
+
     renderMealPlan();
 }
 
@@ -638,7 +672,9 @@ function assignMeal(day, meal, recipeId) {
         mealPlan[currentMember][day] = {};
     }
 
-    mealPlan[currentMember][day][meal] = parseInt(recipeId);
+    const id = parseInt(recipeId);
+    mealPlan[currentMember][day][meal] = id;
+    if (recipes[id]) recipes[id].lastUsed = Date.now();
     saveData();
     renderMealPlan();
 }
@@ -906,6 +942,61 @@ function buildTotalString(bases) {
 // ─── Shopping List UI ─────────────────────────────────────────────────────────
 function initializeShoppingList() {
     document.getElementById('generate-list-btn').addEventListener('click', showPantryCheck);
+
+    const addItemBtn = document.getElementById('add-item-btn');
+    const addItemForm = document.getElementById('add-item-form');
+    const cancelAddBtn = document.getElementById('cancel-add-item-btn');
+    const confirmAddBtn = document.getElementById('confirm-add-item-btn');
+    const nameInput = document.getElementById('custom-item-name');
+
+    addItemBtn.addEventListener('click', () => {
+        addItemForm.style.display = addItemForm.style.display === 'none' ? 'flex' : 'none';
+        if (addItemForm.style.display === 'flex') nameInput.focus();
+    });
+
+    cancelAddBtn.addEventListener('click', () => {
+        addItemForm.style.display = 'none';
+        clearAddItemForm();
+    });
+
+    confirmAddBtn.addEventListener('click', addCustomShoppingItem);
+
+    nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addCustomShoppingItem();
+    });
+}
+
+function clearAddItemForm() {
+    document.getElementById('custom-item-name').value = '';
+    document.getElementById('custom-item-qty').value = '';
+    document.getElementById('custom-item-unit').value = '';
+}
+
+function addCustomShoppingItem() {
+    const name = document.getElementById('custom-item-name').value.trim();
+    if (!name) {
+        document.getElementById('custom-item-name').focus();
+        return;
+    }
+
+    const qty = document.getElementById('custom-item-qty').value.trim();
+    const unit = document.getElementById('custom-item-unit').value.trim();
+    const total = qty ? `${qty}${unit ? ' ' + unit : ''}` : '—';
+
+    // If an item with the same name already exists, update it rather than duplicate
+    const existing = shoppingList.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+    if (existing !== -1) {
+        shoppingList[existing].total = total;
+        shoppingList[existing].checked = false;
+    } else {
+        shoppingList.push({ name, total, checked: false, custom: true });
+    }
+
+    saveData();
+    renderShoppingList();
+
+    clearAddItemForm();
+    document.getElementById('add-item-form').style.display = 'none';
 }
 
 function showPantryCheck() {
@@ -993,7 +1084,6 @@ function togglePantryPartial(key) {
 function generateShoppingList() {
     const modal = document.getElementById('pantry-modal');
     const ingredientMap = aggregateIngredients();
-    const shoppingListContent = document.getElementById('shopping-list-content');
 
     const pantryRows = document.querySelectorAll('.pantry-item');
     const subtractions = new Map();
@@ -1057,20 +1147,33 @@ function generateShoppingList() {
             + Object.values(bases.unknown).reduce((a, b) => a + b, 0);
         if (totalRemaining <= 0) return;
 
-        result.push({ name: ing.name, total: buildTotalString(bases) });
+        result.push({ name: ing.name, total: buildTotalString(bases), checked: false });
     });
 
-    if (result.length === 0) {
-        shoppingListContent.innerHTML = '<div class="empty-state">You have everything you need! 🎉</div>';
+    // Preserve any custom items added manually, then replace the rest
+    const customItems = shoppingList.filter(i => i.custom);
+    shoppingList = [...result, ...customItems];
+    saveData();
+    renderShoppingList();
+}
+
+function renderShoppingList() {
+    const shoppingListContent = document.getElementById('shopping-list-content');
+
+    if (shoppingList.length === 0) {
+        shoppingListContent.innerHTML = '<div class="empty-state">No shopping list yet. Generate one from your meal plan!</div>';
         return;
     }
 
     shoppingListContent.innerHTML = `
         <div class="ingredient-group">
-            <h3>Shopping List (${result.length} item${result.length !== 1 ? 's' : ''})</h3>
-            ${result.map((ing, index) => `
-                <div class="ingredient-checkbox" data-ingredient="${ing.name.toLowerCase()}">
-                    <input type="checkbox" id="shop-${index}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3>Shopping List (${shoppingList.length} item${shoppingList.length !== 1 ? 's' : ''})</h3>
+                <button id="clear-list-btn" class="btn-secondary">Clear List</button>
+            </div>
+            ${shoppingList.map((ing, index) => `
+                <div class="ingredient-checkbox${ing.checked ? ' checked' : ''}" data-index="${index}">
+                    <input type="checkbox" id="shop-${index}"${ing.checked ? ' checked' : ''}>
                     <label for="shop-${index}">
                         <strong>${ing.name}</strong> — ${ing.total}
                     </label>
@@ -1081,7 +1184,16 @@ function generateShoppingList() {
 
     document.querySelectorAll('#shopping-list-content input[type="checkbox"]').forEach(cb => {
         cb.addEventListener('change', function () {
+            const idx = parseInt(this.closest('.ingredient-checkbox').dataset.index, 10);
+            shoppingList[idx].checked = this.checked;
             this.parentElement.classList.toggle('checked', this.checked);
+            saveData();
         });
+    });
+
+    document.getElementById('clear-list-btn').addEventListener('click', () => {
+        shoppingList = [];
+        saveData();
+        renderShoppingList();
     });
 }
