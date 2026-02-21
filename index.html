@@ -26,6 +26,7 @@
                 <h2>Recipe Book</h2>
                 <button id="add-recipe-btn" class="btn-primary">Add Recipe</button>
             </div>
+            <input type="text" id="recipe-book-search" placeholder="Search recipes…" class="recipe-book-search">
             <div id="recipe-list" class="recipe-grid"></div>
         </section>
 
@@ -38,7 +39,10 @@
             <div id="meal-plan-container">
                 <div id="recipe-sidebar" class="recipe-sidebar">
                     <h3>Recipe Book</h3>
-                    <input type="text" id="recipe-search" placeholder="Search recipes...">
+                    <div class="sidebar-controls">
+                        <input type="text" id="recipe-search" placeholder="Search recipes...">
+                        <button id="sidebar-sort-btn" class="btn-secondary sidebar-sort-btn" title="Sort order">A–Z</button>
+                    </div>
                     <div id="sidebar-recipe-list"></div>
                 </div>
                 <div id="meal-plan-main">
@@ -52,7 +56,17 @@
         <section id="shopping-list" class="section">
             <div class="section-header">
                 <h2>Shopping List</h2>
-                <button id="generate-list-btn" class="btn-primary">Generate from Meal Plan</button>
+                <div style="display:flex;gap:8px;">
+                    <button id="add-item-btn" class="btn-secondary">Add Item</button>
+                    <button id="generate-list-btn" class="btn-primary">Generate from Meal Plan</button>
+                </div>
+            </div>
+            <div id="add-item-form" class="add-item-form" style="display:none;">
+                <input type="text" id="custom-item-name" placeholder="Item name" class="add-item-name">
+                <input type="number" id="custom-item-qty" placeholder="Qty" min="0" step="any" class="add-item-qty">
+                <input type="text" id="custom-item-unit" placeholder="Unit (optional)" class="add-item-unit">
+                <button id="confirm-add-item-btn" class="btn-primary">Add</button>
+                <button id="cancel-add-item-btn" class="btn-secondary">Cancel</button>
             </div>
             <div id="shopping-list-content"></div>
         </section>
