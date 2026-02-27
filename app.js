@@ -891,7 +891,8 @@ function aggregateIngredients() {
                         });
                     }
                     const entry = ingredientMap.get(key);
-                    const converted = toBase(ingredient.quantity, ingredient.unit);
+                    const servings = recipe.servings || 1;
+                    const converted = toBase(ingredient.quantity / servings, ingredient.unit);
 
                     if (converted.base === 'mass') entry.bases.mass += converted.value;
                     else if (converted.base === 'volume') entry.bases.volume += converted.value;
